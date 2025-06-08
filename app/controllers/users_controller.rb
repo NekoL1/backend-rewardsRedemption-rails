@@ -38,6 +38,13 @@ class UsersController < ApplicationController
     @user.destroy!
   end
 
+  def point_balance
+    user = User.find(params[:id])
+    render json: { user_id: user.id, pointer_balance: user.point_balance }
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'User not Found' }, status: :not_found
+  end
+
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_user
@@ -47,5 +54,5 @@ class UsersController < ApplicationController
     # Only allow a list of trusted parameters through.
     def user_params
       params.expect(user: [ :name, :phone, :email, :point_balance ])
-    end
+    end 
 end

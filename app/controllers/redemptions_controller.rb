@@ -38,6 +38,48 @@ class RedemptionsController < ApplicationController
     @redemption.destroy!
   end
 
+
+  def redeem
+    user = User.find(params[:user_id])
+    product = Product.find(params[:product_id])
+    quantity = params[:quantity].to_i
+
+    if product.inventory < quantity
+      return render json: { error: "Not enough inventory" }, status: :unprocessable_entity
+    end
+
+    Product.transaction do
+      product.lock!
+
+      if product.inventory < quantity
+        return render json: { error: "Not enough inventory" }, status: :unprocessable_entity
+      end
+
+      total_cost = product.redeem_price * quantity
+      if user.point_balance < total_cost
+        return render json: { error: "Not enough points" }, status: :unprocessable_entity
+      end
+
+      # Update product inventory & user point balance
+      product.update!(inventory: product.inventory - quantity)
+      user.update!(point_balance: user.point_balance - total_cost)
+
+      # Create the redemption record
+      redemption = Redemption.create!(
+        user: user,
+        product: product,
+        quantity: quantity,
+        redeem_price: product.redeem_price, 
+        redeem_points: total_cost
+      )
+      render json: { message: "Redemption successful!", redemption: redemption }, status: :created
+    end
+  rescue ActiveRecord::RecordNotFound
+    render json:  { error: "User or product not found" }, status: :not_found
+  rescue => e
+    render json: { error: e.message }, status: :internal_server_error
+  end
+
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_redemption

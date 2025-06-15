@@ -13,4 +13,7 @@ Rails.application.routes.draw do
   get 'users/:id/point_balance', to: 'users#point_balance'
 
   post '/redemptions/redeem', to: 'redemptions#redeem'
+
+  get "/users/:id/redemptions", to: "redemptions#user_history"
+  
 end

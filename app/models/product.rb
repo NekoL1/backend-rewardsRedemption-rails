@@ -1,3 +1,3 @@
 class Product < ApplicationRecord
-  has_many :redemption
+  has_many :redemptions
 end

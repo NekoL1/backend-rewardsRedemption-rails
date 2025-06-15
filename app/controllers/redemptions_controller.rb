@@ -80,6 +80,19 @@ class RedemptionsController < ApplicationController
     render json: { error: e.message }, status: :internal_server_error
   end
 
+  def user_history
+    user = User.find(params[:id])
+    redemptions = user.redemptions 
+                      .includes(:product)
+                      .order(created_at: :desc)
+    render json: redemptions.as_json(
+      only: [:id, :quantity, :redeem_points, :redeem_price, :created_at],
+      include: {product: { only: [:id, :name, :redeem_price]}}
+    )
+    rescue ActiveRecord::RecordNotFound
+      render json:  { error: "User not found" }, status: :not_found
+  end
+
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_redemption

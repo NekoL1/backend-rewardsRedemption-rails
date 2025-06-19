@@ -16,4 +16,5 @@ Rails.application.routes.draw do
 
   get "/users/:id/redemptions", to: "redemptions#user_history"
   
+  get 'users/:id/vip_grade', to: 'users#vip_grade'
 end

@@ -45,6 +45,13 @@ class UsersController < ApplicationController
     render json: { error: 'User not Found' }, status: :not_found
   end
 
+  def vip_grade
+    user = User.find(params[:id])
+    render json: { user_id: user.id, vip_grade: user.vip_grade }
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'User not Found' }, status: :not_found
+  end
+
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_user

@@ -43,6 +43,7 @@ class RedemptionsController < ApplicationController
     user = User.find(params[:user_id])
     product = Product.find(params[:product_id])
     quantity = params[:quantity].to_i
+    discount = user.vip_grade * 0.1
 
     if product.inventory < quantity
       return render json: { error: "Not enough inventory" }, status: :unprocessable_entity
@@ -55,7 +56,8 @@ class RedemptionsController < ApplicationController
         return render json: { error: "Not enough inventory" }, status: :unprocessable_entity
       end
 
-      total_cost = product.redeem_price * quantity
+      total_cost = product.redeem_price * quantity * (1 - discount)
+      total_cost = total_cost.round 
       if user.point_balance < total_cost
         return render json: { error: "Not enough points" }, status: :unprocessable_entity
       end
@@ -70,7 +72,9 @@ class RedemptionsController < ApplicationController
         product: product,
         quantity: quantity,
         redeem_price: product.redeem_price, 
-        redeem_points: total_cost
+        redeem_points: total_cost,
+        vip_grade: user.vip_grade,
+        discount: discount,
       )
       render json: { message: "Redemption successful!", redemption: redemption }, status: :created
     end
@@ -86,7 +90,7 @@ class RedemptionsController < ApplicationController
                       .includes(:product)
                       .order(created_at: :desc)
     render json: redemptions.as_json(
-      only: [:id, :quantity, :redeem_points, :redeem_price, :created_at],
+      only: [:id, :quantity, :redeem_points, :redeem_price, :created_at, :vip_grade, :discount],
       include: {product: { only: [:id, :name, :redeem_price]}}
     )
     rescue ActiveRecord::RecordNotFound

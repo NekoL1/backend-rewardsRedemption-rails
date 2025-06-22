@@ -43,7 +43,8 @@ class RedemptionsController < ApplicationController
     user = User.find(params[:user_id])
     product = Product.find(params[:product_id])
     quantity = params[:quantity].to_i
-    discount = user.vip_grade * 0.1
+    raw_discount = user.vip_grade * 10
+    discount = raw_discount / 100.0  # get a decimal discount, not an intege
 
     if product.inventory < quantity
       return render json: { error: "Not enough inventory" }, status: :unprocessable_entity
@@ -74,7 +75,7 @@ class RedemptionsController < ApplicationController
         redeem_price: product.redeem_price, 
         redeem_points: total_cost,
         vip_grade: user.vip_grade,
-        discount: discount,
+        discount: raw_discount,
       )
       render json: { message: "Redemption successful!", redemption: redemption }, status: :created
     end

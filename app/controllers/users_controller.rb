@@ -10,7 +10,11 @@ class UsersController < ApplicationController
 
   # GET /users/1
   def show
-    render json: @user
+    user = User.find(params[:id])
+    render json: user.as_json(
+      only: [ :id, :name, :phone, :email, :created_at, :updated_at, :vip_grade ],
+      methods: [ :point_balance_dollar ]
+    )
   end
 
   # POST /users
@@ -40,16 +44,20 @@ class UsersController < ApplicationController
 
   def point_balance
     user = User.find(params[:id])
-    render json: { user_id: user.id, pointer_balance: user.point_balance }
+    # render json: { user_id: user.id, pointer_balance: user.point_balance }
+    render json: user.as_json(
+      only: [ :id ],
+      methods: [ :point_balance_dollar ]
+    )
   rescue ActiveRecord::RecordNotFound
-    render json: { error: 'User not Found' }, status: :not_found
+    render json: { error: "User not Found" }, status: :not_found
   end
 
   def vip_grade
     user = User.find(params[:id])
     render json: { user_id: user.id, vip_grade: user.vip_grade }
   rescue ActiveRecord::RecordNotFound
-    render json: { error: 'User not Found' }, status: :not_found
+    render json: { error: "User not Found" }, status: :not_found
   end
 
   private
@@ -61,5 +69,5 @@ class UsersController < ApplicationController
     # Only allow a list of trusted parameters through.
     def user_params
       params.expect(user: [ :name, :phone, :email, :point_balance ])
-    end 
+    end
 end

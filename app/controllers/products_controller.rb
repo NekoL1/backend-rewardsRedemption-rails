@@ -1,11 +1,19 @@
 class ProductsController < ApplicationController
   before_action :set_product, only: %i[ show update destroy ]
 
+
+  def redeem_price_dollar
+    (redeem_price || 0) / 100.0
+  end
+
   # GET /products
   def index
     @products = Product.all
 
-    render json: @products
+    render json: @products.as_json(
+      only: [ :id, :name, :inventory ],
+      methods: [ :redeem_price_dollar ]
+    )
   end
 
   # GET /products/1
@@ -41,11 +49,11 @@ class ProductsController < ApplicationController
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_product
-      @product = Product.find(params.expect(:id))
+      @product = Product.find(params.require(:id))
     end
 
     # Only allow a list of trusted parameters through.
     def product_params
-      params.expect(product: [ :name, :redeem_price, :inventory ])
+      params.require(:product).permit(:name, :redeem_price, :inventory)
     end
 end

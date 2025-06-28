@@ -10,7 +10,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_19_023351) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_27_041117) do
+  create_table "payments", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.integer "amount_cents", null: false
+    t.string "currency", default: "cad", null: false
+    t.string "status", default: "pending", null: false
+    t.string "stripe_payment_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_payments_on_user_id"
+  end
+
   create_table "products", force: :cascade do |t|
     t.string "name"
     t.integer "redeem_price"
@@ -29,6 +40,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_19_023351) do
     t.datetime "updated_at", null: false
     t.integer "vip_grade", default: 0, null: false
     t.integer "discount", default: 0, null: false
+    t.integer "payment_id"
+    t.string "payment_method", default: "points", null: false
+    t.index ["payment_id"], name: "index_redemptions_on_payment_id"
     t.index ["product_id"], name: "index_redemptions_on_product_id"
     t.index ["user_id"], name: "index_redemptions_on_user_id"
   end
@@ -43,6 +57,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_19_023351) do
     t.integer "vip_grade", default: 0, null: false
   end
 
+  add_foreign_key "payments", "users"
+  add_foreign_key "redemptions", "payments"
   add_foreign_key "redemptions", "products"
   add_foreign_key "redemptions", "users"
 end

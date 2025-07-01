@@ -10,11 +10,18 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   # root "posts#index"
-  get 'users/:id/point_balance', to: 'users#point_balance'
+  get "users/:id/point_balance", to: "users#point_balance"
 
-  post '/redemptions/redeem', to: 'redemptions#redeem'
+  # post "/redemptions/redeem_with_points", to: "redemptions#redeem_with_points"
 
   get "/users/:id/redemptions", to: "redemptions#user_history"
-  
-  get 'users/:id/vip_grade', to: 'users#vip_grade'
+
+  get "users/:id/vip_grade", to: "users#vip_grade"
+
+  resources :redemptions do
+    collection do
+      post :redeem_with_points
+      post :start_stripe_payment
+    end
+  end
 end

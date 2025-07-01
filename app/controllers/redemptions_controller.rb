@@ -39,7 +39,7 @@ class RedemptionsController < ApplicationController
   end
 
 
-  def redeem
+  def redeem_with_points
     user = User.find(params[:user_id])
     product = Product.find(params[:product_id])
     quantity = params[:quantity].to_i
@@ -76,6 +76,7 @@ class RedemptionsController < ApplicationController
         redeem_points: total_cost,
         vip_grade: user.vip_grade,
         discount: raw_discount,
+        payment_method: "points"
       )
       render json: { message: "Redemption successful!", redemption: redemption }, status: :created
     end
@@ -84,6 +85,50 @@ class RedemptionsController < ApplicationController
   rescue => e
     render json: { error: e.message }, status: :internal_server_error
   end
+
+  def start_stripe_payment
+    user=User.find(params[:user_id])
+    product = Product.find(params[:product_id])
+    quantity = params[:quantity].to_i
+
+    raw_discount = user.vip_grade * 10
+    discount = raw_discount / 100.0
+
+    total_cost = product.redeem_price * quantity * (1 - discount)
+    total_cost = total_cost.round
+
+    if product.inventory < quantity
+      return render json: { error: "Not enough inventory" }, status: :unprocessable_entity
+    end
+
+    payment = Payment.create!(
+      user: user,
+      amount_cents: total_cost,
+      currency: "cad",
+      status: "pending",
+    )
+
+    # 1. Create a Stripe Checkout Session
+    session = Stripe::Checkout::Session.create(
+      payment_method_types: [ "card" ],
+      line_items: [ {
+        price_data: {
+          currency: payment.currency,
+          product_data: { name: product.name },
+          unit_amount: product.redeem_price
+        },
+        quantity: quantity
+      } ],
+      mode: "payment",
+      success_url: "#{ENV['FRONTEND_URL']}/payment-success?session_id={CHECKOUT_SESSION_ID}&payment_id=#{payment.id}",
+      cancel_url: ""
+    )
+
+    payment.update!(stripe_payment_id: session.id)
+    render json: { stripe_url: session.url, payment_id: payment.id }
+  end
+
+
 
   def user_history
     user = User.find(params[:id])

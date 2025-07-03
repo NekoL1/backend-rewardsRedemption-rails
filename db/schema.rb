@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_27_041117) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_03_032938) do
   create_table "payments", force: :cascade do |t|
     t.integer "user_id", null: false
     t.integer "amount_cents", null: false
@@ -19,6 +19,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_27_041117) do
     t.string "stripe_payment_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "original_unit_price_cents"
+    t.integer "discounted_unit_price_cents"
+    t.integer "discount_percent"
+    t.integer "original_total_cents"
+    t.integer "discounted_total_cents"
     t.index ["user_id"], name: "index_payments_on_user_id"
   end
 

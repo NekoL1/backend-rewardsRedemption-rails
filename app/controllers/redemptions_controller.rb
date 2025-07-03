@@ -91,11 +91,13 @@ class RedemptionsController < ApplicationController
     product = Product.find(params[:product_id])
     quantity = params[:quantity].to_i
 
-    raw_discount = user.vip_grade * 10
-    discount = raw_discount / 100.0
+    discount_percent  = user.vip_grade * 10
+    discount = discount_percent / 100.0
 
-    total_cost = product.redeem_price * quantity * (1 - discount)
-    total_cost = total_cost.round
+    original_unit_price = product.redeem_price
+    discounted_unit_price = original_unit_price * quantity * (1 - discount)
+    original_total_cost = original_unit_price * quantity
+    discounted_total_cost = discounted_unit_price * quantity
 
     if product.inventory < quantity
       return render json: { error: "Not enough inventory" }, status: :unprocessable_entity
@@ -103,7 +105,12 @@ class RedemptionsController < ApplicationController
 
     payment = Payment.create!(
       user: user,
+      original_unit_price_cents: original_unit_price,
+      discounted_unit_price_cents: discounted_unit_price,
+      discount_percent: discount_percent,
       amount_cents: total_cost,
+      original_total_cents: original_total_cost,
+      discounted_total_cents: discounted_total_cost,
       currency: "cad",
       status: "pending",
     )
@@ -115,13 +122,21 @@ class RedemptionsController < ApplicationController
         price_data: {
           currency: payment.currency,
           product_data: { name: product.name },
-          unit_amount: product.redeem_price
+          unit_amount: payment.discounted_unit_price_cents
         },
         quantity: quantity
       } ],
       mode: "payment",
       success_url: "#{ENV['FRONTEND_URL']}/payment-success?session_id={CHECKOUT_SESSION_ID}&payment_id=#{payment.id}",
-      cancel_url: "#{ENV['FRONTEND_URL']}/payment-cancel"
+      cancel_url: "#{ENV['FRONTEND_URL']}/payment-cancel",
+      metadata: {
+        payment_id: payment.id,
+        user_id: user.id,
+        product_id: product.id,
+        original_unit_price: original_unit_price,
+        discount_percent: discount_percent,
+        discounted_unit_price: discounted_unit_price
+      }
     )
 
     payment.update!(stripe_payment_id: session.id)

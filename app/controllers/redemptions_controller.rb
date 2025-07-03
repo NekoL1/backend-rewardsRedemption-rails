@@ -121,7 +121,7 @@ class RedemptionsController < ApplicationController
       } ],
       mode: "payment",
       success_url: "#{ENV['FRONTEND_URL']}/payment-success?session_id={CHECKOUT_SESSION_ID}&payment_id=#{payment.id}",
-      cancel_url: ""
+      cancel_url: "#{ENV['FRONTEND_URL']}/payment-cancel"
     )
 
     payment.update!(stripe_payment_id: session.id)

@@ -90,7 +90,7 @@ class RedemptionsController < ApplicationController
     user=User.find(params[:user_id])
     product = Product.find(params[:product_id])
     quantity = params[:quantity].to_i
-
+   
     discount_percent  = user.vip_grade * 10
     discount = discount_percent / 100.0
 
@@ -108,7 +108,7 @@ class RedemptionsController < ApplicationController
       original_unit_price_cents: original_unit_price,
       discounted_unit_price_cents: discounted_unit_price,
       discount_percent: discount_percent,
-      amount_cents: total_cost,
+      amount_cents: discounted_total_cost,
       original_total_cents: original_total_cost,
       discounted_total_cents: discounted_total_cost,
       currency: "cad",
@@ -140,7 +140,12 @@ class RedemptionsController < ApplicationController
     )
 
     payment.update!(stripe_payment_id: session.id)
+    
     render json: { stripe_url: session.url, payment_id: payment.id }
+    rescue => e
+      Rails.logger.error "🚨 Error in start_stripe_payment: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
+      render json: { error: "Payment failed to initiate" }, status: :internal_server_error
   end
 
 

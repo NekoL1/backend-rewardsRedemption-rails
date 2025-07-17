@@ -24,4 +24,6 @@ Rails.application.routes.draw do
       post :start_stripe_payment
     end
   end
+
+  post "/stripe/webhook", to: "stripe#webhook"
 end

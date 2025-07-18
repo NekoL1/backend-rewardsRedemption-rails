@@ -27,8 +27,19 @@ class StripeController < ApplicationController
   def handle_checkout_session(session)
     # This is where you find your Payment by session['id'],
     # check if already fulfilled, and create Redemption if needed.
-    payment = Payment.find_by(stripe_payment_id: session["id"])
-    return unless payment && payment.status != "succeeded"
+
+    stripe_session_id = session["id"]
+    Rails.logger.info "Handling session completed for: #{stripe_session_id}"
+
+    payment = Payment.find_by(stripe_payment_id: stripe_session_id)
+
+    if payment.nil?
+      Rails.logger.error "No payment found for stripe_payment_id=#{stripe_session_id}"
+      return head :not_found
+    end
+
+    payment.update!(status: "succeeded")
+    Rails.logger.info "Payment #{payment.id} marked as succeeded"
 
     # You must store product_id and quantity in Payment or in session['metadata']
     # Example if you store in Payment:
@@ -37,8 +48,9 @@ class StripeController < ApplicationController
     quantity = payment.quantity
 
     if product.inventory >= quantity
+
       Product.transaction do
-        pruduct.lock!
+        product.lock!
         product.update!(inventory: product.inventory - quantity)
 
         Redemption.create!(
@@ -51,10 +63,11 @@ class StripeController < ApplicationController
           payment: payment
         )
 
-        payment.update!(status: "succeeded")
+        Rails.logger.info "Redemption created for Payment #{payment.id}"
       end
     else
       payment.update!(status: "failed")
+      Rails.logger.warn "Not enough inventory for Payment #{payment.id}"
     end
   end
 end

@@ -23,7 +23,6 @@ class PurchasesController < ApplicationController
       original_unit_price_cents: original_unit_price,
       discounted_unit_price_cents: discounted_unit_price,
       discount_percent: discount_percent,
-      # amount_cents: discounted_total_cost,
       original_total_cents: original_total_cost,
       discounted_total_cents: discounted_total_cost,
       currency: "cad",

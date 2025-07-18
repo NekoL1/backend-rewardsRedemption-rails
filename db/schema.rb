@@ -10,10 +10,9 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_03_032938) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_18_033523) do
   create_table "payments", force: :cascade do |t|
     t.integer "user_id", null: false
-    t.integer "amount_cents", null: false
     t.string "currency", default: "cad", null: false
     t.string "status", default: "pending", null: false
     t.string "stripe_payment_id"
@@ -24,6 +23,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_03_032938) do
     t.integer "discount_percent"
     t.integer "original_total_cents"
     t.integer "discounted_total_cents"
+    t.integer "product_id"
+    t.integer "quantity"
+    t.index ["product_id"], name: "index_payments_on_product_id"
     t.index ["user_id"], name: "index_payments_on_user_id"
   end
 
@@ -62,6 +64,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_03_032938) do
     t.integer "vip_grade", default: 0, null: false
   end
 
+  add_foreign_key "payments", "products"
   add_foreign_key "payments", "users"
   add_foreign_key "redemptions", "payments"
   add_foreign_key "redemptions", "products"

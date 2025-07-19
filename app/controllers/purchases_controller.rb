@@ -30,15 +30,15 @@ class PurchasesController < ApplicationController
     )
 
     session = Stripe::Checkout::Session.create(
-      payment_method_types: ["card"],
-      line_items: [{
+      payment_method_types: [ "card" ],
+      line_items: [ {
         price_data: {
           currency: payment.currency,
           product_data: { name: product.name },
           unit_amount: payment.discounted_unit_price_cents
         },
         quantity: quantity
-      }],
+      } ],
       mode: "payment",
       success_url: "#{ENV['FRONTEND_URL']}/payment-success?session_id={CHECKOUT_SESSION_ID}&payment_id=#{payment.id}",
       cancel_url: "#{ENV['FRONTEND_URL']}/payment-cancel",

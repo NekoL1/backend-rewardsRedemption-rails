@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_18_033523) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_19_165109) do
   create_table "payments", force: :cascade do |t|
     t.integer "user_id", null: false
     t.string "currency", default: "cad", null: false
@@ -35,6 +35,22 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_18_033523) do
     t.integer "inventory"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "purchases", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.integer "product_id", null: false
+    t.integer "payment_id", null: false
+    t.integer "quantity"
+    t.integer "original_unit_price_cents"
+    t.integer "discount_percent"
+    t.integer "unit_price_cents"
+    t.integer "total_cents"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["payment_id"], name: "index_purchases_on_payment_id"
+    t.index ["product_id"], name: "index_purchases_on_product_id"
+    t.index ["user_id"], name: "index_purchases_on_user_id"
   end
 
   create_table "redemptions", force: :cascade do |t|
@@ -66,6 +82,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_18_033523) do
 
   add_foreign_key "payments", "products"
   add_foreign_key "payments", "users"
+  add_foreign_key "purchases", "payments"
+  add_foreign_key "purchases", "products"
+  add_foreign_key "purchases", "users"
   add_foreign_key "redemptions", "payments"
   add_foreign_key "redemptions", "products"
   add_foreign_key "redemptions", "users"

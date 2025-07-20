@@ -24,8 +24,7 @@ Rails.application.routes.draw do
     end
   end
 
-  post "/stripe/webhook", to: "stripe#webhook"
-  post '/stripe/webhook', to: 'stripe_webhooks#receive'
-
   post "/purchases/start_stripe_payment", to: "purchases#start_stripe_payment"
+
+  post "/stripe/webhook", to: "stripe_webhooks#receive"
 end

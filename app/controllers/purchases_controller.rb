@@ -1,4 +1,22 @@
 class PurchasesController < ApplicationController
+  def show_by_payment
+    payment_id = params[:payment_id]
+    payment = Payment.find_by(id: payment_id)
+    return render json: { error: "Payment not found" }, status: :not_found unless payment
+
+    purchase = Purchase.find_by(payment_id: payment.id)
+    return render json: { error: "Purchase not found" }, status: :not_found unless purchase
+
+    render json: {
+      product_name: purchase.product.name,
+      quantity: purchase.quantity,
+      total_paid_cents: purchase.total_cents,
+      currency: payment.currency,
+      user_email: payment.user.email,
+      disouct: payment.discount_percent
+    }
+  end
+
   def start_stripe_payment
     user = User.find(params[:user_id])
     product = Product.find(params[:product_id])
@@ -40,8 +58,8 @@ class PurchasesController < ApplicationController
         quantity: quantity
       } ],
       mode: "payment",
-      success_url: "#{ENV['FRONTEND_URL']}/payment-success?session_id={CHECKOUT_SESSION_ID}&payment_id=#{payment.id}",
-      cancel_url: "#{ENV['FRONTEND_URL']}/payment-cancel",
+      success_url: "#{ENV['FRONTEND_URL']}/payment/payment-success?session_id={CHECKOUT_SESSION_ID}&payment_id=#{payment.id}",
+      cancel_url: "#{ENV['FRONTEND_URL']}/payment/payment-cancel",
       metadata: {
         payment_id: payment.id,
         user_id: user.id,

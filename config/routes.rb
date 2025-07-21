@@ -27,4 +27,6 @@ Rails.application.routes.draw do
   post "/purchases/start_stripe_payment", to: "purchases#start_stripe_payment"
 
   post "/stripe/webhook", to: "stripe_webhooks#receive"
+
+  get "/purchases/:payment_id", to: "purchases#show_by_payment"
 end

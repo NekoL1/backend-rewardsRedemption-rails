@@ -1,4 +1,18 @@
 class PurchasesController < ApplicationController
+  def index
+    user_id  = params[:user_id]
+
+    if user_id.blank?
+      return render json: { error: "user_id is required" }, status: :bad_request
+    end
+    purchases = Purchase.includes(:product)
+                    .where(user_id: user_id)
+                    .order(created_at: :desc)
+    render json: purchases.as_json(include: {
+      product: { only: [ :id, :name ] }
+    }, except: [ :updated_at ])
+  end
+
   def show_by_payment
     payment_id = params[:payment_id]
     payment = Payment.find_by(id: payment_id)

@@ -31,4 +31,6 @@ Rails.application.routes.draw do
   get "/purchases/:payment_id", to: "purchases#show_by_payment"
 
   get "/purchases", to: "purchases#index"
+
+  mount ActionCable.server => "/cable"  # Makes WebSocket available at ws://localhost:3000/cable
 end

@@ -67,6 +67,16 @@ class RedemptionsController < ApplicationController
       product.update!(inventory: product.inventory - quantity)
       user.update!(point_balance: user.point_balance - total_cost)
 
+      # Broadcast the updated user info
+      # Sends real-time user data to any client subscribed to "user_#{user.id}"
+      ActionCable.server.broadcast(
+        "user_#{user.id}",
+        user.as_json(
+          only: [ :id, :name, :phone, :email, :vip_grade, :created_at, :updated_at ],
+          methods: [ :point_balance_dollar ]
+        )
+      )
+
       # Create the redemption record
       redemption = Redemption.create!(
         user: user,

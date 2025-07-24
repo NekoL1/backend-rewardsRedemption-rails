@@ -38,90 +38,17 @@ class RedemptionsController < ApplicationController
     @redemption.destroy!
   end
 
-
   def redeem_with_points
     user = User.find(params[:user_id])
     product = Product.find(params[:product_id])
     quantity = params[:quantity].to_i
-    raw_discount = user.vip_grade * 10
-    discount = raw_discount / 100.0  # get a decimal discount, not an intege
 
-    if product.inventory < quantity
-      return render json: { error: "Not enough inventory" }, status: :unprocessable_entity
-    end
+    validate_redemption(user, product, quantity)
 
     Product.transaction do
-      product.lock!
-
-      if product.inventory < quantity
-        return render json: { error: "Not enough inventory" }, status: :unprocessable_entity
-      end
-
-      total_cost = product.redeem_price * quantity * (1 - discount)
-      total_cost = total_cost.round
-      if user.point_balance < total_cost
-        return render json: { error: "Not enough points" }, status: :unprocessable_entity
-      end
-
-      # Update product inventory & user point balance
-      product.update!(inventory: product.inventory - quantity)
-      # ActionCable.server.broadcast(
-      #   "product_#{product.id}",
-      #   product.as_json(
-      #     only: [ :id, :name, :iventory, :redeem_price, :created_at, :updated_at ],
-      #     methods: [ :redeem_price_dollar ]
-      #   )
-      # )
-      updated_product_data = product.as_json(
-        only: [ :id, :name, :inventory, :redeem_price ],
-        methods: [ :redeem_price_dollar ]
-      )
-      Rails.logger.info("⚡ Broadcasting to product_#{product.id}: #{updated_product_data.inspect}")
-      stream_name = "product_#{product.id}"
-      Rails.logger.info("Broadcasting to #{stream_name}")
-      ActionCable.server.broadcast("product_#{product.id}", updated_product_data)
-
-
-      user.update!(point_balance: user.point_balance - total_cost)
-
-      # Broadcast the updated user info
-      # Sends real-time user data to any client subscribed to "user_#{user.id}"
-      ActionCable.server.broadcast(
-        "user_#{user.id}",
-        user.as_json(
-          only: [ :id, :name, :phone, :email, :vip_grade, :created_at, :updated_at ],
-          methods: [ :point_balance_dollar ]
-        )
-      )
-
-      # Create the redemption record
-      redemption = Redemption.create!(
-        user: user,
-        product: product,
-        quantity: quantity,
-        redeem_price: product.redeem_price,
-        redeem_points: total_cost,
-        vip_grade: user.vip_grade,
-        discount: raw_discount,
-        payment_method: "points"
-      )
-
-      ActionCable.server.broadcast(
-      "redemption_user_#{user.id}",
-        redemption.as_json(
-          only: [ :id, :quantity, :created_at, :vip_grade, :discount ],
-          methods: [ :redeem_price_dollar, :redeem_points_dollar ],
-          include: {
-            product: {
-              only: [ :id, :name, :redeem_price ],
-              methods: [ :redeem_price_dollar ]
-            }
-          }
-        )
-      )
-
-      render json: { message: "Redemption successful!", redemption: redemption }, status: :created
+      perform_redemption(user, product, quantity)
     end
+    render json: { message: "Redemption successful!", redemption: redemption }, status: :created
   rescue ActiveRecord::RecordNotFound
     render json:  { error: "User or product not found" }, status: :not_found
   rescue => e
@@ -157,5 +84,88 @@ class RedemptionsController < ApplicationController
     # Only allow a list of trusted parameters through.
     def redemption_params
       params.expect(redemption: [ :user_id, :product_id, :quantity, :redeem_price, :redeem_points ])
+    end
+
+    def validate_redemption(user, product, quantity)
+      if product.inventory < quantity
+        raise "Not enough inventory"
+      end
+
+      total_cost = calculate_total_cost(user, product, quantity)
+      if user.point_balance < total_cost
+        raise "Not enough points"
+      end
+    end
+
+    def calculate_total_cost(user, product, quantity)
+      discount_percentage = user.vip_grade * 10
+      discounted_price = product.redeem_price * (100 - discount_percentage) / 100.0
+      (discounted_price * quantity).round
+    end
+
+    def perform_redemption(user, product, quantity)
+      product.lock!
+      validate_redemption(user, product, quantity) # Double-check after lock
+
+      total_cost = calculate_total_cost(user, product, quantity)
+
+      # update and broadcast product
+      product.update!(inventory: product.inventory - quantity)
+      broadcast_product_update(product)
+
+      # update and broadcast user
+      user.update!(point_balance: user.point_balance - total_cost)
+      broadcast_user_update(user)
+
+      # create new redemption record
+      create_redemption(user, product, quantity, total_cost)
+    end
+
+    def broadcast_product_update(product)
+      updated_product_data = product.as_json(
+        only: [ :id, :name, :inventory, :redeem_price ],
+        methods: [ :redeem_price_dollar ]
+      )
+      Rails.logger.info("⚡ Broadcasting to product_#{product.id}: #{updated_product_data.inspect}")
+      stream_name = "product_#{product.id}"
+      Rails.logger.info("Broadcasting to #{stream_name}")
+      ActionCable.server.broadcast("product_#{product.id}", updated_product_data)
+    end
+
+    def broadcast_user_update(user)
+      user_data = user.as_json(
+        only: [ :id, :name, :phone, :email, :vip_grade, :created_at, :updated_at ],
+        methods: [ :point_balance_dollar ]
+      )
+      ActionCable.server.broadcast("user_#{user.id}", user_data)
+    end
+
+    def create_redemption(user, product, quantity, total_cost)
+      @redemption = Redemption.create!(
+        user: user,
+        product: product,
+        quantity: quantity,
+        redeem_price: product.redeem_price,
+        redeem_points: total_cost,
+        vip_grade: user.vip_grade,
+        discount: user.vip_grade * 10,
+        payment_method: "points"
+      )
+      broadcast_redemption_update(@redemption)
+      @redemption
+    end
+
+    def broadcast_redemption_update(redemption)
+      redemption_data = redemption.as_json(
+        only: [ :id, :quantity, :created_at, :vip_grade, :discount ],
+        methods: [ :redeem_price_dollar, :redeem_points_dollar ],
+        include: {
+          product: {
+            only: [ :id, :name, :redeem_price ],
+            methods: [ :redeem_price_dollar ]
+          }
+        }
+      )
+      ActionCable.server.broadcast("redemption_user_#{redemption.user.id}", redemption_data)
     end
 end

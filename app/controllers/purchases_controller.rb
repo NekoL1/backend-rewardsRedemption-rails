@@ -36,31 +36,17 @@ class PurchasesController < ApplicationController
     product = Product.find(params[:product_id])
     quantity = params[:quantity].to_i
 
-    discount_percent = user.vip_grade * 10
-    discount = discount_percent / 100.0
-
-    original_unit_price = product.redeem_price
-    discounted_unit_price = original_unit_price * (1 - discount)
-    original_total_cost = original_unit_price * quantity
-    discounted_total_cost = discounted_unit_price * quantity
-
     if product.inventory < quantity
       return render json: { error: "Not enough inventory" }, status: :unprocessable_entity
     end
 
-    payment = Payment.create!(
-      user: user,
-      product_id: product.id,
-      quantity: quantity,
-      original_unit_price_cents: original_unit_price,
-      discounted_unit_price_cents: discounted_unit_price,
-      discount_percent: discount_percent,
-      original_total_cents: original_total_cost,
-      discounted_total_cents: discounted_total_cost,
-      currency: "cad",
-      status: "pending"
-    )
+    # calculate pricing
+    pricing = calculate_pricing(product.redeem_price, quantity, user.vip_grade)
 
+    # create new payment record
+    payment = create_payment_record(user, product, quantity, pricing)
+
+    # create a stripe checkout session
     session = Stripe::Checkout::Session.create(
       payment_method_types: [ "card" ],
       line_items: [ {
@@ -79,18 +65,49 @@ class PurchasesController < ApplicationController
         user_id: user.id,
         product_id: product.id,
         quantity: quantity,
-        original_unit_price: original_unit_price,
-        discount_percent: discount_percent,
-        discounted_unit_price: discounted_unit_price
+        original_unit_price: pricing[:original_unit_price],
+        discount_percent: pricing[:discount_percent],
+        discounted_unit_price: pricing[:discounted_unit_price]
       }
     )
 
     payment.update!(stripe_payment_id: session.id)
 
     render json: { stripe_url: session.url, payment_id: payment.id }
-    rescue => e
+  rescue => e
       Rails.logger.error "Error in start_stripe_payment: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
       render json: { error: "Payment failed to initiate" }, status: :internal_server_error
   end
+
+  private
+    def calculate_pricing(unit_price, quantity, vip_grade)
+      discount_percent = vip_grade * 10
+      discount_ratio = discount_percent / 100.0
+
+      discounted_unit_price = unit_price * (1 - discount_ratio)
+
+      {
+        original_unit_price: unit_price,
+        discounted_unit_price: discounted_unit_price,
+        original_total: unit_price * quantity,
+        discounted_total: discounted_unit_price * quantity,
+        discount_percent: discount_percent
+      }
+    end
+
+    def create_payment_record(user, product, quantity, pricing)
+      Payment.create!(
+        user: user,
+        product_id: product.id,
+        quantity: quantity,
+        original_unit_price_cents: pricing[:original_unit_price],
+        discounted_unit_price_cents: pricing[:discounted_unit_price],
+        discount_percent: pricing[:discount_percent],
+        original_total_cents: pricing[:original_total],
+        discounted_total_cents: pricing[:discounted_total],
+        currency: "cad",
+        status: "pending"
+      )
+    end
 end

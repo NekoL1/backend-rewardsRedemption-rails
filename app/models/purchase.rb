@@ -20,6 +20,9 @@ class Purchase < ApplicationRecord
       product.lock!
       product.update!(inventory: product.inventory - quantity)
 
+      # broadcast inventory change
+      broadcast_product_update(product)
+
       # Create purchase record
       create!(
         user: user,
@@ -32,5 +35,15 @@ class Purchase < ApplicationRecord
         total_cents: total_price
       )
     end
+  end
+
+  def self.broadcast_product_update(product)
+    updated_product_data = product.as_json(
+      only: [ :id, :name, :inventory, :redeem_price ],
+      methods: [ :redeem_price_dollar ]
+    )
+    stream_name = "product_#{product.id}"
+    Rails.logger.info("Broadcasting purchase inventory update to #{stream_name}")
+    ActionCable.server.broadcast(stream_name, updated_product_data)
   end
 end

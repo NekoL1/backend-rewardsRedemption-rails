@@ -65,6 +65,23 @@ class RedemptionsController < ApplicationController
 
       # Update product inventory & user point balance
       product.update!(inventory: product.inventory - quantity)
+      # ActionCable.server.broadcast(
+      #   "product_#{product.id}",
+      #   product.as_json(
+      #     only: [ :id, :name, :iventory, :redeem_price, :created_at, :updated_at ],
+      #     methods: [ :redeem_price_dollar ]
+      #   )
+      # )
+      updated_product_data = product.as_json(
+        only: [ :id, :name, :inventory, :redeem_price ],
+        methods: [ :redeem_price_dollar ]
+      )
+      Rails.logger.info("⚡ Broadcasting to product_#{product.id}: #{updated_product_data.inspect}")
+      stream_name = "product_#{product.id}"
+      Rails.logger.info("Broadcasting to #{stream_name}")
+      ActionCable.server.broadcast("product_#{product.id}", updated_product_data)
+
+
       user.update!(point_balance: user.point_balance - total_cost)
 
       # Broadcast the updated user info
@@ -88,6 +105,21 @@ class RedemptionsController < ApplicationController
         discount: raw_discount,
         payment_method: "points"
       )
+
+      ActionCable.server.broadcast(
+      "redemption_user_#{user.id}",
+        redemption.as_json(
+          only: [ :id, :quantity, :created_at, :vip_grade, :discount ],
+          methods: [ :redeem_price_dollar, :redeem_points_dollar ],
+          include: {
+            product: {
+              only: [ :id, :name, :redeem_price ],
+              methods: [ :redeem_price_dollar ]
+            }
+          }
+        )
+      )
+
       render json: { message: "Redemption successful!", redemption: redemption }, status: :created
     end
   rescue ActiveRecord::RecordNotFound

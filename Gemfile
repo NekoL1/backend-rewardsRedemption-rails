@@ -48,4 +48,7 @@ group :development, :test do
   gem "rubocop-rails-omakase", require: false
 
   gem 'byebug'
+  
+  # RSpec for Rails 8
+  gem "rspec-rails", "~> 8.0"
 end

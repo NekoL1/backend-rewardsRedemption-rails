@@ -7,8 +7,8 @@ one:
   quantity: 1
   original_unit_price_cents: 1
   discount_percent: 1
-  uni_price_cents: 1
-  total_centes: 1
+  unit_price_cents: 1
+  total_cents: 1
 
 two:
   user: two
@@ -17,5 +17,5 @@ two:
   quantity: 1
   original_unit_price_cents: 1
   discount_percent: 1
-  uni_price_cents: 1
-  total_centes: 1
+  unit_price_cents: 1
+  total_cents: 1

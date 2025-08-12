@@ -2,14 +2,12 @@
 
 one:
   user: one
-  amount_cents: 1
-  currency: MyString
-  status: MyString
-  stripe_payment_id: MyString
+  currency: cad
+  status: pending
+  stripe_payment_id: pay_test_1
 
 two:
   user: two
-  amount_cents: 1
-  currency: MyString
-  status: MyString
-  stripe_payment_id: MyString
+  currency: cad
+  status: pending
+  stripe_payment_id: pay_test_2

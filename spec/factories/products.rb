@@ -4,4 +4,4 @@ FactoryBot.define do
     redeem_price { 1000 }
     inventory { 10 }
   end
-end 
+end

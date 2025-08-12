@@ -6,4 +6,4 @@ FactoryBot.define do
     point_balance { 0 }
     vip_grade { 0 }
   end
-end 
+end

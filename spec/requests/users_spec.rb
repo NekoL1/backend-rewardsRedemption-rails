@@ -128,4 +128,4 @@ RSpec.describe "Users", type: :request do
       expect(body["error"]).to eq("User not Found")
     end
   end
-end 
+end

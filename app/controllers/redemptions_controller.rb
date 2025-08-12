@@ -126,7 +126,7 @@ class RedemptionsController < ApplicationController
         only: [ :id, :name, :inventory, :redeem_price ],
         methods: [ :redeem_price_dollar ]
       )
-      Rails.logger.info("⚡ Broadcasting to product_#{product.id}: #{updated_product_data.inspect}")
+      Rails.logger.info("Broadcasting to product_#{product.id}: #{updated_product_data.inspect}")
       stream_name = "product_#{product.id}"
       Rails.logger.info("Broadcasting to #{stream_name}")
       ActionCable.server.broadcast("product_#{product.id}", updated_product_data)

@@ -44,7 +44,6 @@ class UsersController < ApplicationController
 
   def point_balance
     user = User.find(params[:id])
-    # render json: { user_id: user.id, pointer_balance: user.point_balance }
     render json: user.as_json(
       only: [ :id ],
       methods: [ :point_balance_dollar ]
@@ -63,11 +62,11 @@ class UsersController < ApplicationController
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_user
-      @user = User.find(params.expect(:id))
+      @user = User.find(params[:id])
     end
 
     # Only allow a list of trusted parameters through.
     def user_params
-      params.expect(user: [ :name, :phone, :email, :point_balance ])
+      params.require(:user).permit(:name, :phone, :email, :point_balance, :vip_grade)
     end
 end

@@ -9,9 +9,9 @@ RSpec.describe "Users", type: :request do
   end
 
   describe "GET /users" do
-    it "returns a list of users" do
-      user = User.create!(name: "Alice", phone: "123", email: "alice@example.com", point_balance: 500, vip_grade: 1)
+    let!(:user) { create(:user) }
 
+    it "returns a list of users" do
       get users_path
 
       expect(response).to have_http_status(:ok)
@@ -22,29 +22,31 @@ RSpec.describe "Users", type: :request do
   end
 
   describe "GET /users/:id" do
-    it "returns the user with expected fields and methods" do
-      user = User.create!(name: "Bob", phone: "456", email: "bob@example.com", point_balance: 250, vip_grade: 2)
+    let(:user) { create(:user, point_balance: 250, vip_grade: 2) }
 
+    it "returns the user with expected fields and methods" do
       get user_path(user)
 
       expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
       expect(body).to include(
         "id" => user.id,
-        "name" => "Bob",
-        "phone" => "456",
-        "email" => "bob@example.com",
-        "vip_grade" => 2
+        "name" => user.name,
+        "phone" => user.phone,
+        "email" => user.email,
+        "vip_grade" => user.vip_grade
       )
       expect(body).to have_key("created_at")
       expect(body).to have_key("updated_at")
-      expect(body["point_balance_dollar"]).to eq(2.5)
+      expect(body["point_balance_dollar"]).to eq(user.point_balance / 100.0)
     end
   end
 
   describe "POST /users" do
+    let(:attrs) { attributes_for(:user) }
+
     it "creates a user and returns 201" do
-      params = { user: { name: "Carol", phone: "789", email: "carol@example.com", point_balance: 1234 } }
+      params = { user: attrs }
 
       expect do
         post users_path, params: params.to_json, headers: json_headers
@@ -53,18 +55,18 @@ RSpec.describe "Users", type: :request do
       expect(response).to have_http_status(:created)
       body = JSON.parse(response.body)
       expect(body).to include(
-        "name" => "Carol",
-        "phone" => "789",
-        "email" => "carol@example.com",
-        "point_balance" => 1234
+        "name" => attrs[:name],
+        "phone" => attrs[:phone],
+        "email" => attrs[:email],
+        "point_balance" => attrs[:point_balance]
       )
     end
   end
 
   describe "PATCH /users/:id" do
-    it "updates the user and returns 200" do
-      user = User.create!(name: "Dave", phone: "111", email: "dave@example.com", point_balance: 0)
+    let(:user) { create(:user) }
 
+    it "updates the user and returns 200" do
       patch user_path(user), params: { user: { name: "David" } }.to_json, headers: json_headers
 
       expect(response).to have_http_status(:ok)
@@ -75,9 +77,9 @@ RSpec.describe "Users", type: :request do
   end
 
   describe "DELETE /users/:id" do
-    it "destroys the user and returns 204" do
-      user = User.create!(name: "Eve", phone: "222", email: "eve@example.com", point_balance: 0)
+    let!(:user) { create(:user) }
 
+    it "destroys the user and returns 204" do
       expect do
         delete user_path(user)
       end.to change(User, :count).by(-1)
@@ -87,15 +89,15 @@ RSpec.describe "Users", type: :request do
   end
 
   describe "GET /users/:id/point_balance" do
-    it "returns the point balance in dollars" do
-      user = User.create!(name: "Frank", phone: "333", email: "frank@example.com", point_balance: 987)
+    let(:user) { create(:user, point_balance: 987) }
 
+    it "returns the point balance in dollars" do
       get "/users/#{user.id}/point_balance"
 
       expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
       expect(body).to include("id" => user.id)
-      expect(body["point_balance_dollar"]).to eq(9.87)
+      expect(body["point_balance_dollar"]).to eq(user.point_balance / 100.0)
     end
 
     it "returns 404 when user not found" do
@@ -108,14 +110,14 @@ RSpec.describe "Users", type: :request do
   end
 
   describe "GET /users/:id/vip_grade" do
-    it "returns the vip grade" do
-      user = User.create!(name: "Grace", phone: "444", email: "grace@example.com", point_balance: 0, vip_grade: 3)
+    let(:user) { create(:user, vip_grade: 3) }
 
+    it "returns the vip grade" do
       get "/users/#{user.id}/vip_grade"
 
       expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
-      expect(body).to eq({ "user_id" => user.id, "vip_grade" => 3 })
+      expect(body).to eq({ "user_id" => user.id, "vip_grade" => user.vip_grade })
     end
 
     it "returns 404 when user not found" do

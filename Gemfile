@@ -51,4 +51,7 @@ group :development, :test do
   
   # RSpec for Rails 8
   gem "rspec-rails", "~> 8.0"
+
+  # FactoryBot for test data factories
+  gem "factory_bot_rails", "~> 6.4"
 end

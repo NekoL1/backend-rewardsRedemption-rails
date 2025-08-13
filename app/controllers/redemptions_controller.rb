@@ -78,12 +78,12 @@ class RedemptionsController < ApplicationController
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_redemption
-      @redemption = Redemption.find(params.expect(:id))
+      @redemption = Redemption.find(params[:id])
     end
 
     # Only allow a list of trusted parameters through.
     def redemption_params
-      params.expect(redemption: [ :user_id, :product_id, :quantity, :redeem_price, :redeem_points ])
+      params.require(:redemption).permit(:user_id, :product_id, :quantity, :redeem_price, :redeem_points)
     end
 
     def validate_redemption(user, product, quantity)

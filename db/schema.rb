@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_19_165109) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_13_040535) do
   create_table "payments", force: :cascade do |t|
     t.integer "user_id", null: false
     t.string "currency", default: "cad", null: false
@@ -70,6 +70,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_19_165109) do
     t.index ["user_id"], name: "index_redemptions_on_user_id"
   end
 
+  create_table "reward_transactions", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.integer "purchase_id"
+    t.integer "points", null: false
+    t.integer "amount_cents"
+    t.string "kind", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["kind"], name: "index_reward_transactions_on_kind"
+    t.index ["purchase_id", "kind"], name: "index_reward_transactions_on_purchase_id_and_kind", unique: true, where: "kind = 'earn'"
+    t.index ["purchase_id"], name: "index_reward_transactions_on_purchase_id"
+    t.index ["user_id"], name: "index_reward_transactions_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "name"
     t.string "phone"
@@ -88,4 +102,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_19_165109) do
   add_foreign_key "redemptions", "payments"
   add_foreign_key "redemptions", "products"
   add_foreign_key "redemptions", "users"
+  add_foreign_key "reward_transactions", "purchases"
+  add_foreign_key "reward_transactions", "users"
 end

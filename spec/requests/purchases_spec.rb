@@ -165,4 +165,4 @@ RSpec.describe "Purchases", type: :request do
       expect(JSON.parse(response.body)).to include("error" => "Payment failed to initiate with Stripe")
     end
   end
-end 
+end

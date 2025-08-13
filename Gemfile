@@ -54,4 +54,7 @@ group :development, :test do
 
   # FactoryBot for test data factories
   gem "factory_bot_rails", "~> 6.4"
+
+  # Fake data generators
+  gem "faker", "~> 3.4"
 end

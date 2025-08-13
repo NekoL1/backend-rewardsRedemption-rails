@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :product do
-    sequence(:name) { |n| "Product #{n}" }
-    redeem_price { 1000 }
-    inventory { 10 }
+    name { Faker::Commerce.product_name }
+    redeem_price { Faker::Number.between(from: 100, to: 10_000) }
+    inventory { Faker::Number.between(from: 0, to: 500) }
   end
 end

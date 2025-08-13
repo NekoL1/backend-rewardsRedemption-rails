@@ -1,9 +1,9 @@
 FactoryBot.define do
   factory :user do
-    sequence(:name) { |n| "User #{n}" }
-    sequence(:phone) { |n| "555-000#{n}" }
-    sequence(:email) { |n| "user#{n}@example.com" }
-    point_balance { 0 }
-    vip_grade { 0 }
+    name { Faker::Name.name }
+    phone { Faker::PhoneNumber.cell_phone_in_e164 }
+    email { Faker::Internet.unique.email }
+    point_balance { Faker::Number.between(from: 0, to: 100_000) }
+    vip_grade { Faker::Number.between(from: 0, to: 5) }
   end
 end

@@ -2,7 +2,7 @@ class Purchase < ApplicationRecord
   belongs_to :user
   belongs_to :product
   belongs_to :payment
-  has_many :reward_transactions
+  has_many :reward_transactions  # Earn, Reversal, Adjustments
 
   def self.create_from_payment!(payment)
     raise "Purchase already exists for payment #{payment.id}" if payment.purchase.present?

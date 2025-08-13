@@ -19,6 +19,8 @@ class StripeWebhooksController < ActionController::API
     case event.type
     when "checkout.session.completed"
       handle_checkout_session(event.data.object)
+    when "charge.refunded"
+      handle_charge_refunded(event.data.object)
     else
       Rails.logger.info "Unhandled event type: #{event.type}"
     end

@@ -43,13 +43,29 @@ class StripeWebhooksController < ActionController::API
     end
 
     payment.update!(status: "succeeded")
+    purchase = payment.purchase
 
-    begin
-      Purchase.create_from_payment!(payment)
-      Rails.logger.info "Purchase created for Payment #{payment.id}"
-    rescue => e
-      payment.update!(status: "failed")
-      Rails.logger.error "Failed to create purchase in handle_checkout_session: #{e.message}"
+    unless purchase
+      begin
+        Purchase.create_from_payment!(payment)
+        Rails.logger.info "Purchase created for Payment #{payment.id}"
+      rescue => e
+        payment.update!(status: "failed")
+        Rails.logger.error "Failed to create purchase in handle_checkout_session: #{e.message}"
+      end
     end
+
+    # Award points (safe to call multiple times thanks to the unique index)
+    begin
+      RewardService.award_for_purchase!(purchase)
+      Rails.logger.info "Points awarded for Purchase #{purchase.id}"
+    rescue => e
+      Rails.logger.error "Failed to award points for Purchase #{purchase.id}: #{e.message}"
+    end
+
+    head :ok
+  end
+
+  def handle_charge_refunded(charge)
   end
 end

@@ -11,14 +11,13 @@ class Purchase < ApplicationRecord
     user = payment.user
     quantity = payment.quantity
 
-    raise "Not enough inventory" if product.inventory < quantity
-
     unit_price = payment.discounted_unit_price_cents
     total_price = unit_price * quantity
 
     Purchase.transaction do
       # Lock and update inventory
       product.lock!
+      raise "Not enough inventory" if product.inventory < quantity
       product.update!(inventory: product.inventory - quantity)
 
       # broadcast inventory change

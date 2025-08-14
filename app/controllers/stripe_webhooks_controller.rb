@@ -16,13 +16,17 @@ class StripeWebhooksController < ActionController::API
       return head :bad_request
     end
 
-    case event.type
-    when "checkout.session.completed"
-      handle_checkout_session(event.data.object)
-    when "charge.refunded"
-      handle_charge_refunded(event.data.object)
-    else
-      Rails.logger.info "Unhandled event type: #{event.type}"
+    begin
+      case event.type
+      when "checkout.session.completed"
+        handle_checkout_session(event.data.object)
+      when "charge.refunded"
+        handle_charge_refunded(event.data.object)
+      else
+        Rails.logger.info "Unhandled event type: #{event.type}"
+      end
+    rescue => e
+       Rails.logger.error "Webhook handler error for #{event.id} (#{event.type}): #{e.class} - #{e.message}"
     end
 
     head :ok
@@ -56,16 +60,19 @@ class StripeWebhooksController < ActionController::API
     end
 
     # Award points (safe to call multiple times thanks to the unique index)
-    begin
-      RewardService.award_for_purchase!(purchase)
-      Rails.logger.info "Points awarded for Purchase #{purchase.id}"
-    rescue => e
-      Rails.logger.error "Failed to award points for Purchase #{purchase.id}: #{e.message}"
+    if purchase
+      begin
+        RewardService.award_for_purchase!(purchase)
+        Rails.logger.info "Points awarded for Purchase #{purchase.id}"
+      rescue => e
+        Rails.logger.error "Failed to award points for Purchase #{purchase.id}: #{e.message}"
+      end
+    else
+      Rails.logger.warn "No purchase present after creation attempt for Payment #{payment.id}"
     end
-
-    head :ok
   end
 
   def handle_charge_refunded(charge)
+    # TODO: implement refund logic as needed
   end
 end

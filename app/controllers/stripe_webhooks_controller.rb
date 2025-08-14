@@ -51,7 +51,7 @@ class StripeWebhooksController < ActionController::API
 
     unless purchase
       begin
-        Purchase.create_from_payment!(payment)
+        purchase = Purchase.create_from_payment!(payment)
         Rails.logger.info "Purchase created for Payment #{payment.id}"
       rescue => e
         payment.update!(status: "failed")
@@ -62,8 +62,8 @@ class StripeWebhooksController < ActionController::API
     # Award points (safe to call multiple times thanks to the unique index)
     if purchase
       begin
-        RewardService.award_for_purchase!(purchase)
         Rails.logger.info "Points awarded for Purchase #{purchase.id}"
+        RewardService.award_for_purchase!(purchase)
       rescue => e
         Rails.logger.error "Failed to award points for Purchase #{purchase.id}: #{e.message}"
       end
